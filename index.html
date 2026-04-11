@@ -14,7 +14,6 @@
     *{box-sizing:border-box;margin:0;padding:0;}
     body{background:#F9F7F4;font-family:'Noto Serif TC',Georgia,serif;}
     #root{min-height:100vh;}
-    /* Login screen */
     #login-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:#F9F7F4;padding:24px;}
     .login-card{background:#fff;border-radius:20px;padding:40px 32px;max-width:380px;width:100%;text-align:center;box-shadow:0 4px 40px rgba(0,0,0,0.10);}
     .login-logo{width:64px;height:64px;background:#C8956C;color:#fff;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:900;margin:0 auto 20px;}
@@ -23,21 +22,12 @@
     .google-btn{display:flex;align-items:center;justify-content:center;gap:12px;background:#fff;border:1.5px solid #ddd;border-radius:12px;padding:14px 24px;font-size:15px;font-family:inherit;font-weight:600;cursor:pointer;color:#333;width:100%;transition:box-shadow .2s;}
     .google-btn:hover{box-shadow:0 2px 12px rgba(0,0,0,0.12);}
     .google-btn svg{width:20px;height:20px;flex-shrink:0;}
-    /* Loading */
     #loading{display:flex;align-items:center;justify-content:center;min-height:100vh;font-size:14px;color:#aaa;font-family:'Noto Serif TC',serif;}
     .spinner{width:32px;height:32px;border:3px solid #eee;border-top-color:#C8956C;border-radius:50%;animation:spin 0.8s linear infinite;margin-right:12px;}
     @keyframes spin{to{transform:rotate(360deg);}}
-    /* User avatar in header */
-    .user-avatar{width:32px;height:32px;border-radius:50%;overflow:hidden;cursor:pointer;border:2px solid #C8956C44;flex-shrink:0;}
-    .user-avatar img{width:100%;height:100%;object-fit:cover;}
-    /* Sync indicator */
-    .sync-dot{width:7px;height:7px;border-radius:50%;background:#6B8F71;display:inline-block;margin-left:6px;vertical-align:middle;}
-    .sync-dot.syncing{background:#C8956C;animation:pulse 1s infinite;}
-    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
   </style>
 </head>
 <body>
-
 <div id="loading"><div class="spinner"></div>載入中…</div>
 <div id="login-screen" style="display:none">
   <div class="login-card">
@@ -53,13 +43,12 @@
 </div>
 <div id="root" style="display:none"></div>
 
-<!-- Firebase SDKs -->
+<!-- Firebase -->
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
 const firebaseConfig = {
   apiKey: "AIzaSyD9F-aZ9mTSOjpDqFPv3ZpgyQIO1Ekfr68",
   authDomain: "architect-planner-9e9f8.firebaseapp.com",
@@ -68,70 +57,43 @@ const firebaseConfig = {
   messagingSenderId: "541936154768",
   appId: "1:541936154768:web:95d6917767c7f07a290015"
 };
-
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
-
 function showLoading(){ document.getElementById("loading").style.display="flex"; document.getElementById("login-screen").style.display="none"; document.getElementById("root").style.display="none"; }
 function showLogin(){ document.getElementById("loading").style.display="none"; document.getElementById("login-screen").style.display="flex"; document.getElementById("root").style.display="none"; }
 function showApp(){ document.getElementById("loading").style.display="none"; document.getElementById("login-screen").style.display="none"; document.getElementById("root").style.display="block"; }
-
-// Firebase load/save helpers exposed globally
-async function fbLoad(uid) {
-  try {
-    const snap = await getDoc(doc(db,"users",uid,"data","main"));
-    return snap.exists() ? snap.data() : null;
-  } catch(e){ console.error("fbLoad error",e); return null; }
+async function fbLoad(uid){
+  try{
+    const snap=await getDoc(doc(db,"users",uid,"data","main"));
+    if(!snap.exists()) return null;
+    const main=snap.data();
+    try{ const dl=await getDoc(doc(db,"users",uid,"data","drawingLog")); return{...main,drawingLog:dl.exists()?dl.data():{}}; }
+    catch(e){ return main; }
+  }catch(e){ return null; }
 }
-async function fbSave(uid, data) {
-  try {
-    // Split out drawing images to avoid 1MB Firestore limit
-    const {drawingLog, ...rest} = data;
-    // Save text data
-    await setDoc(doc(db,"users",uid,"data","main"), rest);
-    // Save drawing log (may have base64 images - chunk by day)
-    if(drawingLog){
-      await setDoc(doc(db,"users",uid,"data","drawingLog"), drawingLog);
-    }
-    window.__syncDot && window.__syncDot("done");
-  } catch(e){ console.error("fbSave error",e); }
+async function fbSave(uid,data){
+  try{
+    const{drawingLog,...rest}=data;
+    await setDoc(doc(db,"users",uid,"data","main"),rest);
+    if(drawingLog) await setDoc(doc(db,"users",uid,"data","drawingLog"),drawingLog);
+  }catch(e){ console.error(e); }
 }
-
-document.getElementById("google-login-btn").addEventListener("click", async()=>{
-  try {
-    showLoading();
-    await signInWithPopup(auth, provider);
-  } catch(e){
-    console.error(e);
-    showLogin();
-    alert("登入失敗，請重試");
-  }
+document.getElementById("google-login-btn").addEventListener("click",async()=>{
+  try{ showLoading(); await signInWithPopup(auth,provider); }
+  catch(e){ console.error(e); showLogin(); alert("登入失敗，請重試"); }
 });
-
-onAuthStateChanged(auth, async(user)=>{
+onAuthStateChanged(auth,async(user)=>{
   if(user){
     showLoading();
-    // Set global helpers
-    window.__fbSave = (data) => fbSave(user.uid, data);
-    window.__fbLoad = async () => {
-      const main = await fbLoad(user.uid);
-      if(!main) return null;
-      // Load drawing log separately
-      try {
-        const dlSnap = await getDoc(doc(db,"users",user.uid,"data","drawingLog"));
-        const drawingLog = dlSnap.exists() ? dlSnap.data() : {};
-        return {...main, drawingLog};
-      } catch(e){ return main; }
-    };
-    window.__fbUser = user;
-    window.__fbSignOut = () => signOut(auth);
+    window.__fbSave=(data)=>fbSave(user.uid,data);
+    window.__fbLoad=()=>fbLoad(user.uid);
+    window.__fbUser=user;
+    window.__fbSignOut=()=>signOut(auth);
     showApp();
   } else {
-    window.__fbSave = null;
-    window.__fbLoad = null;
-    window.__fbUser = null;
+    window.__fbSave=null; window.__fbLoad=null; window.__fbUser=null;
     showLogin();
   }
 });
@@ -145,7 +107,9 @@ onAuthStateChanged(auth, async(user)=>{
 
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-<script type="text/babel" data-presets="react" src="./app.js"></script>
+<!-- App code loaded from jsDelivr CDN (GitHub) -->
+
+<script type="text/babel" data-presets="react" src="https://cdn.jsdelivr.net/gh/swling50-cpu/architect-planner@main/app.js"></script>
 
 </body>
 </html>
