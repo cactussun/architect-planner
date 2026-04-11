@@ -14,13 +14,12 @@
     *{box-sizing:border-box;margin:0;padding:0;}
     body{background:#F9F7F4;font-family:'Noto Serif TC',Georgia,serif;}
     #root{min-height:100vh;}
-    #login-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:#F9F7F4;padding:24px;}
+    #login-screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:#F9F7F4;padding:24px;}
     .login-card{background:#fff;border-radius:20px;padding:40px 32px;max-width:380px;width:100%;text-align:center;box-shadow:0 4px 40px rgba(0,0,0,0.10);}
     .login-logo{width:64px;height:64px;background:#C8956C;color:#fff;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:900;margin:0 auto 20px;}
     .login-title{font-size:20px;font-weight:900;color:#2C2C2C;margin-bottom:6px;}
     .login-sub{font-size:13px;color:#aaa;margin-bottom:32px;}
-    .google-btn{display:flex;align-items:center;justify-content:center;gap:12px;background:#fff;border:1.5px solid #ddd;border-radius:12px;padding:14px 24px;font-size:15px;font-family:inherit;font-weight:600;cursor:pointer;color:#333;width:100%;transition:box-shadow .2s;}
-    .google-btn:hover{box-shadow:0 2px 12px rgba(0,0,0,0.12);}
+    .google-btn{display:flex;align-items:center;justify-content:center;gap:12px;background:#fff;border:1.5px solid #ddd;border-radius:12px;padding:14px 24px;font-size:15px;font-family:inherit;font-weight:600;cursor:pointer;color:#333;width:100%;}
     .google-btn svg{width:20px;height:20px;flex-shrink:0;}
     #loading{display:flex;align-items:center;justify-content:center;min-height:100vh;font-size:14px;color:#aaa;font-family:'Noto Serif TC',serif;}
     .spinner{width:32px;height:32px;border:3px solid #eee;border-top-color:#C8956C;border-radius:50%;animation:spin 0.8s linear infinite;margin-right:12px;}
@@ -29,7 +28,7 @@
 </head>
 <body>
 <div id="loading"><div class="spinner"></div>載入中…</div>
-<div id="login-screen" style="display:none">
+<div id="login-screen">
   <div class="login-card">
     <div class="login-logo">建</div>
     <div class="login-title">建築師考試備考計畫</div>
@@ -42,8 +41,6 @@
   </div>
 </div>
 <div id="root" style="display:none"></div>
-
-<!-- Firebase -->
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -86,7 +83,6 @@ document.getElementById("google-login-btn").addEventListener("click",async()=>{
 });
 onAuthStateChanged(auth,async(user)=>{
   if(user){
-    showLoading();
     window.__fbSave=(data)=>fbSave(user.uid,data);
     window.__fbLoad=()=>fbLoad(user.uid);
     window.__fbUser=user;
@@ -99,31 +95,31 @@ onAuthStateChanged(auth,async(user)=>{
 });
 </script>
 
-<!-- React + Babel -->
-
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-<!-- App code loaded from jsDelivr CDN (GitHub) -->
+<script src="https://cdn.jsdelivr.net/gh/swling50-cpu/architect-planner@main/books-data.js"></script>
 
 <script>
-// After Babel loads, fetch and transform app.js
-window.addEventListener('load', function() {
-  fetch('https://cdn.jsdelivr.net/gh/swling50-cpu/architect-planner@main/app.js')
-    .then(r => r.text())
-    .then(code => {
-      const transformed = Babel.transform(code, {presets: ['react']}).code;
-      const script = document.createElement('script');
-      script.textContent = transformed;
-      document.body.appendChild(script);
-    })
-    .catch(e => {
-      document.getElementById('loading').innerHTML = '<div style="color:#e57373;padding:20px;text-align:center">載入失敗，請重新整理頁面<br><small>'+e.message+'</small></div>';
-    });
-});
+// Fetch and compile the app
+fetch('https://cdn.jsdelivr.net/gh/swling50-cpu/architect-planner@main/app.js')
+  .then(r=>r.text())
+  .then(code=>{
+    try {
+      const out = Babel.transform(code, {presets:['react']}).code;
+      const s = document.createElement('script');
+      s.textContent = out;
+      document.head.appendChild(s);
+    } catch(e) {
+      document.getElementById('loading').innerHTML = '<div style="padding:20px;color:red">編譯錯誤: '+e.message+'</div>';
+    }
+  })
+  .catch(e=>{
+    document.getElementById('loading').innerHTML = '<div style="padding:20px;color:red">載入失敗: '+e.message+'</div>';
+  });
 </script>
 
 </body>
