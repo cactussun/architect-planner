@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+
+<html><head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Debug</title>
+<style>
+body{font-family:sans-serif;padding:20px;background:#f9f7f4}
+.step{padding:8px 12px;margin:4px 0;border-radius:6px;font-size:13px}
+.ok{background:#d4edda;color:#155724}
+.err{background:#f8d7da;color:#721c24}
+.wait{background:#fff3cd;color:#856404}
+</style>
+</head>
+<body>
+<h2 style="color:#C8956C;margin-bottom:16px">建築師備考 - 診斷</h2>
+<div id="log"></div>
+<script>
+function log(msg, type) {
+  var d = document.createElement('div');
+  d.className = 'step ' + (type||'wait');
+  d.textContent = msg;
+  document.getElementById('log').appendChild(d);
+}
+log('頁面載入中...', 'wait');
+</script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" 
+  onload="log('✓ React 載入成功', 'ok')"
+  onerror="log('✗ React 載入失敗', 'err')"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"
+  onload="log('✓ ReactDOM 載入成功', 'ok')"
+  onerror="log('✗ ReactDOM 載入失敗', 'err')"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"
+  onload="log('✓ Babel 載入成功', 'ok'); testBabel();"
+  onerror="log('✗ Babel 載入失敗', 'err')"></script>
+<script>
+function testBabel() {
+  log('開始測試 Babel 編譯...', 'wait');
+  try {
+    var simple = 'function Test() { return React.createElement("div", null, "Hello"); }';
+    var result = Babel.transform('function Test() { return <div>Hello</div>; }', {presets: ['react']});
+    log('✓ Babel 編譯測試成功', 'ok');
+    log('開始解碼主程式...', 'wait');
+
+```
+// Try a tiny base64 decode
+var tiny = btoa('const x = 1 + 1;');
+var decoded = atob(tiny);
+log('✓ Base64 解碼正常', 'ok');
+
+// Now test with actual app size simulation
+log('測試大型編譯 (模擬)...', 'wait');
+var bigCode = '';
+for(var i=0;i<100;i++) bigCode += 'function f'+i+'() { return <div key={'+i+'}>item {'+i+'}</div>; }\n';
+var t0 = Date.now();
+var r = Babel.transform(bigCode, {presets:['react']});
+var t1 = Date.now();
+log('✓ 大型編譯完成，耗時 ' + (t1-t0) + 'ms', 'ok');
+```
+
+} catch(e) {
+log(’✗ 錯誤: ’ + e.message, ‘err’);
+}
+}
+</script>
+
+</body></html>
